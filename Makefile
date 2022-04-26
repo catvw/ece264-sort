@@ -10,4 +10,4 @@ test: reference mine
 
 .PHONY: clean
 clean:
-	-rm reference mine
+	-rm reference mine output*.txt
