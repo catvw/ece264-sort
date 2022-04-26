@@ -111,7 +111,8 @@ int main() {
 // You may add global variables, functions, and/or
 // class defintions here if you wish.
 
-void sortDataList(list<Data *> &l) {
-  // Fill this in
-
-}
+#ifdef REFERENCE
+  #include "reference.cpp"
+#else
+  #include "mine.cpp"
+#endif
