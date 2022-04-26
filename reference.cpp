@@ -30,7 +30,7 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++] = *iter;
 
-	sort(entries, entries + length, are_ordered);
+	sort(entries, entries + SORT_LENGTH, are_ordered);
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)

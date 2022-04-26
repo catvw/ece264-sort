@@ -1,6 +1,8 @@
 constexpr const size_t maximum_items = 1'010'000; // one percent over a million
 Data* entries[maximum_items];
 
+void insertion_sort(Data** start, Data** end);
+
 int compare(Data* first, Data* second) {
 	const int last_name_comp = first->lastName.compare(second->lastName);
 	const int first_name_comp = first->firstName.compare(second->firstName);
@@ -21,6 +23,58 @@ int compare(Data* first, Data* second) {
 	}
 
 	return 1;
+}
+
+inline void swap(Data** first, Data** second) {
+	Data* temp = *second;
+	*second = *first;
+	*first = temp;
+}
+
+inline void sort_three(Data** one, Data** two, Data** three) {
+	if (compare(*one, *three) > 0) swap(one, three);
+	if (compare(*one, *two) > 0) swap(one, two);
+	if (compare(*two, *three) > 0) swap(two, three);
+}
+
+inline ptrdiff_t partition(Data** start, Data** end) {
+	const ptrdiff_t length = end - start;
+	const ptrdiff_t midway = length / 2;
+
+	// put the median-of-three in the right place
+	//sort_three(start, start + midway, end - 1);
+	Data* median = start[midway];
+	swap(start + midway, end - 1);
+
+	ptrdiff_t left = 0;
+	ptrdiff_t right = length - 2;
+
+	while (true) {
+		while (compare(median, start[left]) > 0) ++left;
+		while (compare(median, start[right]) < 0 && right > left) --right;
+
+		if (right <= left) break;
+
+		swap(start[left], start[right]);
+	}
+
+	// swap the pivot back to where it needs to go
+	swap(start + left, end - 1);
+
+	return left;
+}
+
+void quick_sort(Data** start, Data** end) {
+	const ptrdiff_t length = end - start;
+
+	if (length < 8) {
+		insertion_sort(start, end);
+		return;
+	}
+
+	const ptrdiff_t midway = partition(start, end);
+	insertion_sort(start, start + midway);
+	insertion_sort(start + midway + 1, end);
 }
 
 void insertion_sort(Data** start, Data** end) {
@@ -52,7 +106,7 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++] = *iter;
 
-	insertion_sort(entries, entries + 1000);
+	quick_sort(entries, entries + SORT_LENGTH);
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
