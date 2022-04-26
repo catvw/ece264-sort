@@ -111,7 +111,7 @@ int main() {
 // You may add global variables, functions, and/or
 // class defintions here if you wish.
 
-#define SORT_LENGTH 33
+#define SORT_LENGTH length
 
 #ifdef REFERENCE
   #include "reference.cpp"

@@ -42,7 +42,7 @@ inline ptrdiff_t partition(Data** start, Data** end) {
 	const ptrdiff_t midway = length / 2;
 
 	// put the median-of-three in the right place
-	//sort_three(start, start + midway, end - 1);
+	sort_three(start, start + midway, end - 1);
 	Data* median = start[midway];
 	swap(start + midway, end - 1);
 
@@ -67,14 +67,14 @@ inline ptrdiff_t partition(Data** start, Data** end) {
 void quick_sort(Data** start, Data** end) {
 	const ptrdiff_t length = end - start;
 
-	if (length < 8) {
+	if (length < 20) {
 		insertion_sort(start, end);
 		return;
 	}
 
 	const ptrdiff_t midway = partition(start, end);
-	insertion_sort(start, start + midway);
-	insertion_sort(start + midway + 1, end);
+	quick_sort(start, start + midway);
+	quick_sort(start + midway + 1, end);
 }
 
 void insertion_sort(Data** start, Data** end) {
