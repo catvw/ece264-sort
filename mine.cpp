@@ -180,7 +180,7 @@ void sortDataList(list<Data *> &l) {
 	cerr << '\n';
 
 	cerr << "first names:\n";
-	for (size_t i = 0; i < last_name_table_size; ++i) {
+	for (size_t i = 0; i < first_name_table_size; ++i) {
 		cerr << first_name_table[i] << ", ";
 	}
 	cerr << '\n';
