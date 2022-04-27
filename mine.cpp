@@ -183,7 +183,7 @@ void sortDataList(list<Data *> &l) {
 		}
 
 		size_t i;
-		for (i = 0; i < size; ++i) {
+		for (i = 0; i < length; ++i) {
 			Data_Ref& entry = entries[i];
 			const uint64_t key = entry.first_name;
 			const size_t tab_i = key % size;
@@ -192,13 +192,22 @@ void sortDataList(list<Data *> &l) {
 			if (tab_entry.count == 0) {
 				tab_entry.key = key;
 				++tab_entry.count;
+				if (key == 0) {
+					cout << "zero key @ i=" << i << '\n';
+				}
 			} else if (tab_entry.key != key) {
 				break;
 			}
 		}
 
-		if (i == size) {
+		if (i == length) {
+			cout << "no collisions with size of " << size << '\n';
 			cerr << "no collisions with size of " << size << '\n';
+			for (i = 0; i < size; ++i) {
+				if (table[i].count > 0) {
+					cerr << "[" << i << "] = " << table[i].key << '\n';
+				}
+			}
 			break;
 		}
 	}
