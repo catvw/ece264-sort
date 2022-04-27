@@ -83,13 +83,13 @@ constexpr const size_t maximum_items = 1'010'000; // one percent over a million
 Data_Ref entries[maximum_items];
 
 constexpr const uint_fast8_t radix_bits = 8;
-constexpr const uint_fast16_t radix_base = 0x100; // for now
-constexpr const uint_fast8_t radix_mask = 0xff;
-constexpr const uint_fast8_t max_radix_shift_ssn = 24;
-constexpr const uint_fast8_t max_radix_shift_first = 56;
-constexpr const uint_fast8_t max_radix_shift_last = 56;
+constexpr const size_t radix_base = 1 << radix_bits;
+constexpr const size_t radix_mask = radix_base - 1;
+constexpr const uint_fast8_t max_radix_shift_ssn = 32 - radix_bits;
+constexpr const uint_fast8_t max_radix_shift_first = 64 - radix_bits;
+constexpr const uint_fast8_t max_radix_shift_last = 64 - radix_bits;
 
-constexpr const size_t bin_size = maximum_items; // maybe change in the future?
+constexpr const size_t bin_size = maximum_items; // kind of large
 Bin_Array<radix_base, bin_size> bin_array;
 
 void radix_sort_ssns(const size_t count) {
