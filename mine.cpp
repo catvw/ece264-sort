@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstring>
 
 #include "lookup_tables.hpp"
 
@@ -8,26 +9,31 @@ constexpr const size_t last_name = 9;
 constexpr const size_t first_name = 9;
 }
 
-inline uint32_t ssn_to_int(const string& to_convert) {
-	return 100000000*(to_convert[ 0] & 0xf)
-	      + 10000000*(to_convert[ 1] & 0xf)
-	       + 1000000*(to_convert[ 2] & 0xf)
-	        + 100000*(to_convert[ 4] & 0xf)
-	         + 10000*(to_convert[ 5] & 0xf)
-	          + 1000*(to_convert[ 7] & 0xf)
-	           + 100*(to_convert[ 8] & 0xf)
-	            + 10*(to_convert[ 9] & 0xf)
-	             + 1*(to_convert[10] & 0xf);
+inline uint32_t ssn_to_int(const string& ssn) {
+	const size_t length = 11;
+	char to_convert[length];
+	strncpy(to_convert, ssn.c_str(), length);
+	return 100000000*to_convert[ 0]
+	      + 10000000*to_convert[ 1]
+	       + 1000000*to_convert[ 2]
+	        + 100000*to_convert[ 4]
+	         + 10000*to_convert[ 5]
+	          + 1000*to_convert[ 7]
+	           + 100*to_convert[ 8]
+	            + 10*to_convert[ 9]
+	             + 1*to_convert[10];
 }
 
 /* enters the given number of characters from the given string into the given
    integer, most-significant-place-justified. only for CAPITALIZED A-Z
    strings... fine for this */
 template<typename Integer>
-inline Integer string_to_int(const string& to_convert,
+inline Integer string_to_int(const string& str,
                              const size_t chars) {
-	const size_t string_length = to_convert.length();
+	const size_t string_length = str.length();
 	const size_t first_pass = string_length < chars ? string_length : chars;
+	char to_convert[chars];
+	strncpy(to_convert, str.c_str(), string_length);
 
 	Integer result = 0;
 	size_t i = 0;
@@ -187,7 +193,6 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++].initialize(*iter);
 
-/*
 	radix_sort_ssns(SORT_LENGTH);
 
 	bool likely_set_4 = entries[0].last_name == entries[length - 1].last_name;
@@ -196,7 +201,6 @@ void sortDataList(list<Data *> &l) {
 		radix_sort_first_names(SORT_LENGTH);
 		radix_sort_last_names(SORT_LENGTH);
 	}
-*/
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
