@@ -185,7 +185,7 @@ void sortDataList(list<Data *> &l) {
 		size_t i;
 		for (i = 0; i < length; ++i) {
 			Data_Ref& entry = entries[i];
-			const uint64_t key = entry.first_name;
+			const uint64_t key = entry.last_name;
 			const size_t tab_i = key % size;
 			auto& tab_entry = table[tab_i];
 
