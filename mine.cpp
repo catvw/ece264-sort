@@ -86,19 +86,19 @@ constexpr const uint_fast8_t radix_bits = 8;
 constexpr const size_t radix_base = 1 << radix_bits;
 constexpr const size_t radix_mask = radix_base - 1;
 constexpr const uint_fast8_t max_radix_shift_ssn = 32 - radix_bits;
-constexpr const uint_fast8_t max_radix_shift_first = 64 - radix_bits;
-constexpr const uint_fast8_t max_radix_shift_last = 64 - radix_bits;
+constexpr const uint_fast8_t max_radix_shift_first = 48;
+constexpr const uint_fast8_t max_radix_shift_last = 48;
 
 constexpr const size_t bin_size = maximum_items; // kind of large
 Bin_Array<radix_base, bin_size> bin_array;
 
 void radix_sort_ssns(const size_t count) {
-	uint_fast8_t shift = 0;
+	size_t shift = 0;
 
 	while (true) {
 		for (size_t i = 0; i < count; ++i) {
 			const uint32_t ssn = entries[i].ssn;
-			const uint_fast16_t bin = (ssn >> shift) & radix_mask;
+			const size_t bin = (ssn >> shift) & radix_mask;
 			bin_array[bin].push(entries[i]);
 		}
 
@@ -117,12 +117,12 @@ void radix_sort_ssns(const size_t count) {
 }
 
 void radix_sort_first_names(const size_t count) {
-	uint_fast8_t shift = 0;
+	size_t shift = 0;
 
 	while (true) {
 		for (size_t i = 0; i < count; ++i) {
 			const uint64_t first_name = entries[i].first_name;
-			const uint_fast16_t bin = (first_name >> shift) & radix_mask;
+			const size_t bin = (first_name >> shift) & radix_mask;
 			bin_array[bin].push(entries[i]);
 		}
 
@@ -141,12 +141,12 @@ void radix_sort_first_names(const size_t count) {
 }
 
 void radix_sort_last_names(const size_t count) {
-	uint_fast8_t shift = 0;
+	size_t shift = 0;
 
 	while (true) {
 		for (size_t i = 0; i < count; ++i) {
 			const uint64_t last_name = entries[i].last_name;
-			const uint_fast16_t bin = (last_name >> shift) & radix_mask;
+			const size_t bin = (last_name >> shift) & radix_mask;
 			bin_array[bin].push(entries[i]);
 		}
 
