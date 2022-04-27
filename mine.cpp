@@ -1,5 +1,7 @@
 #include <cstdint>
 
+#include "lookup_tables.hpp"
+
 // minimum characters needed to check uniqueness
 namespace Min_Chars {
 constexpr const size_t last_name = 9;
@@ -171,46 +173,17 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++].initialize(*iter);
 
-	struct {
-		int count;
-		uint64_t key;
-	} table[0x1'0000];
-
-	size_t min_size = -1;
-	for (size_t size = 500; size < 0x1'0000; ++size) {
-		for (size_t i = 0; i < size; ++i) {
-			table[i].count = 0;
-		}
-
-		size_t i;
-		for (i = 0; i < length; ++i) {
-			Data_Ref& entry = entries[i];
-			const uint64_t key = entry.last_name;
-			const size_t tab_i = key % size;
-			auto& tab_entry = table[tab_i];
-
-			if (tab_entry.count == 0) {
-				tab_entry.key = key;
-				++tab_entry.count;
-				if (key == 0) {
-					cout << "zero key @ i=" << i << '\n';
-				}
-			} else if (tab_entry.key != key) {
-				break;
-			}
-		}
-
-		if (i == length) {
-			cout << "no collisions with size of " << size << '\n';
-			cerr << "no collisions with size of " << size << '\n';
-			for (i = 0; i < size; ++i) {
-				if (table[i].count > 0) {
-					cerr << "[" << i << "] = " << table[i].key << '\n';
-				}
-			}
-			break;
-		}
+	cerr << "last names:\n";
+	for (size_t i = 0; i < last_name_table_size; ++i) {
+		cerr << last_name_table[i] << ", ";
 	}
+	cerr << '\n';
+
+	cerr << "first names:\n";
+	for (size_t i = 0; i < last_name_table_size; ++i) {
+		cerr << first_name_table[i] << ", ";
+	}
+	cerr << '\n';
 
 /*
 	radix_sort_ssns(SORT_LENGTH);
