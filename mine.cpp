@@ -8,7 +8,7 @@ constexpr const size_t last_name = 9;
 constexpr const size_t first_name = 9;
 }
 
-constexpr inline uint32_t ssn_to_int(const string& to_convert) {
+inline uint32_t ssn_to_int(const string& to_convert) {
 	return 100000000*(to_convert[ 0] & 0xf)
 	      + 10000000*(to_convert[ 1] & 0xf)
 	       + 1000000*(to_convert[ 2] & 0xf)
@@ -24,8 +24,8 @@ constexpr inline uint32_t ssn_to_int(const string& to_convert) {
    integer, most-significant-place-justified. only for CAPITALIZED A-Z
    strings... fine for this */
 template<typename Integer>
-constexpr inline Integer string_to_int(const string& to_convert,
-                                       const size_t chars) {
+inline Integer string_to_int(const string& to_convert,
+                             const size_t chars) {
 	const size_t string_length = to_convert.length();
 	const size_t first_pass = string_length < chars ? string_length : chars;
 
@@ -41,14 +41,14 @@ constexpr inline Integer string_to_int(const string& to_convert,
 	return result;
 }
 
-constexpr inline uint16_t last_name_to_int(const string& name) {
+inline uint16_t last_name_to_int(const string& name) {
 	return last_name_table[
 		string_to_int<uint64_t>(name, Min_Chars::last_name)
 			% last_name_table_size
 	];
 }
 
-constexpr inline uint16_t first_name_to_int(const string& name) {
+inline uint16_t first_name_to_int(const string& name) {
 	return first_name_table[
 		string_to_int<uint64_t>(name, Min_Chars::first_name)
 			% first_name_table_size
