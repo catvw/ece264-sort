@@ -1,101 +1,182 @@
-constexpr const size_t maximum_items = 1'010'000; // one percent over a million
-Data* entries[maximum_items];
+#include <cstdint>
 
-void insertion_sort(Data** start, Data** end);
+#include "lookup_tables.hpp"
 
-int compare(Data* first, Data* second) {
-	const int last_name_comp = first->lastName.compare(second->lastName);
-	const int first_name_comp = first->firstName.compare(second->firstName);
-	const int ssn_comp = first->ssn.compare(second->ssn);
+// minimum characters needed to check uniqueness
+namespace Min_Chars {
+constexpr const size_t last_name = 9;
+constexpr const size_t first_name = 9;
+}
 
-	if (last_name_comp < 0) { // ordered by last name
-		return -1;
-	} else if (last_name_comp == 0) { // last names equal
-		if (first_name_comp < 0) { // ordered by first name
-			return -1;
-		} else if (first_name_comp == 0) { // first names equal
-			if (ssn_comp < 0) { // ordered enough by ssns
-				return -1;
-			} else if (ssn_comp == 0) { // exactly equal
-				return 0;
-			}
-		}
+inline uint32_t ssn_to_int(const string& to_convert) {
+	return 100000000*(to_convert[ 0] & 0xf)
+	      + 10000000*(to_convert[ 1] & 0xf)
+	       + 1000000*(to_convert[ 2] & 0xf)
+	        + 100000*(to_convert[ 4] & 0xf)
+	         + 10000*(to_convert[ 5] & 0xf)
+	          + 1000*(to_convert[ 7] & 0xf)
+	           + 100*(to_convert[ 8] & 0xf)
+	            + 10*(to_convert[ 9] & 0xf)
+	             + 1*(to_convert[10] & 0xf);
+}
+
+/* enters the given number of characters from the given string into the given
+   integer, most-significant-place-justified. only for CAPITALIZED A-Z
+   strings... fine for this */
+template<typename Integer>
+inline Integer string_to_int(const string& to_convert,
+                             const size_t chars) {
+	const size_t string_length = to_convert.length();
+	const size_t first_pass = string_length < chars ? string_length : chars;
+
+	Integer result = 0;
+	size_t i = 0;
+	for (; i < first_pass; ++i) {
+		// effectively store in base-27
+		result *= 27;
+		result += to_convert[i] - 'A' + 1;
 	}
+	for (; i < chars; ++i) result *= 27;
 
-	return 1;
+	return result;
 }
 
-inline void swap(Data** first, Data** second) {
-	Data* temp = *second;
-	*second = *first;
-	*first = temp;
+inline uint16_t last_name_to_int(const string& name) {
+	return last_name_table[
+		string_to_int<uint64_t>(name, Min_Chars::last_name)
+			% last_name_table_size
+	];
 }
 
-inline void sort_three(Data** one, Data** two, Data** three) {
-	if (compare(*one, *three) > 0) swap(one, three);
-	if (compare(*one, *two) > 0) swap(one, two);
-	if (compare(*two, *three) > 0) swap(two, three);
+inline uint16_t first_name_to_int(const string& name) {
+	return first_name_table[
+		string_to_int<uint64_t>(name, Min_Chars::first_name)
+			% first_name_table_size
+	];
 }
 
-inline ptrdiff_t partition(Data** start, Data** end) {
-	const ptrdiff_t length = end - start;
-	const ptrdiff_t midway = length / 2;
+struct Data_Ref {
+	uint32_t ssn;
+	uint16_t last_name;
+	uint16_t first_name;
+	Data* data;
 
-	// put the median-of-three in the right place
-	sort_three(start, start + midway, end - 1);
-	Data* median = start[midway];
-	swap(start + midway, end - 1);
+	inline void initialize(Data* data);
+};
 
-	ptrdiff_t left = 0;
-	ptrdiff_t right = length - 2;
+inline void Data_Ref::initialize(Data* data) {
+	this->data = data;
+	ssn = ssn_to_int(data->ssn);
+	last_name = last_name_to_int(data->lastName);
+	first_name = first_name_to_int(data->firstName);
+}
+
+template<size_t Bin_Count, size_t Bin_Size>
+struct Bin_Array {
+	static constexpr const size_t max_size = Bin_Count;
+
+	struct Bin {
+		static constexpr const size_t max_size = Bin_Size;
+
+		size_t size;
+		Data_Ref contents[Bin_Size];
+
+		inline Bin() : size(0) { }
+		inline Data_Ref operator[](size_t index) { return contents[index]; }
+		inline void push(Data_Ref& next) { contents[size++] = next; }
+	};
+
+	Bin bins[Bin_Count];
+
+	inline Bin_Array() { }
+	inline Bin& operator[](size_t index) { return bins[index]; }
+};
+
+constexpr const size_t maximum_items = 1'010'000; // one percent over a million
+Data_Ref entries[maximum_items];
+
+constexpr const uint_fast8_t radix_bits = 9;
+constexpr const size_t radix_base = 1 << radix_bits;
+constexpr const size_t radix_mask = radix_base - 1;
+constexpr const uint_fast8_t max_radix_shift_first = 0;
+constexpr const uint_fast8_t max_radix_shift_last = 0;
+
+constexpr const size_t bin_size = (maximum_items / radix_base) << 4;
+Bin_Array<radix_base, bin_size> bin_array;
+
+void radix_sort_ssns(const size_t count) {
+	constexpr const size_t bits = 8;
+	constexpr const size_t base = 1 << bits;
+	constexpr const size_t mask = base - 1;
+	constexpr const uint_fast8_t max_shift = 24;
+
+	size_t shift = 0;
+	while (true) {
+		for (size_t i = 0; i < count; ++i) {
+			const uint32_t ssn = entries[i].ssn;
+			const size_t bin = (ssn >> shift) & mask;
+			bin_array[bin].push(entries[i]);
+		}
+
+		// TODO: add a bin iterator that makes this easy
+		size_t entry = 0;
+		for (size_t bin = 0; bin < base; ++bin) {
+			for (size_t i = 0; i < bin_array[bin].size; ++i) {
+				entries[entry++] = bin_array[bin][i];
+			}
+			bin_array[bin].size = 0;
+		}
+
+		if (shift == max_shift) break;
+		shift += bits;
+	}
+}
+
+void radix_sort_first_names(const size_t count) {
+	size_t shift = 0;
 
 	while (true) {
-		while (compare(median, start[left]) > 0) ++left;
-		while (compare(median, start[right]) < 0 && right > left) --right;
-
-		if (right <= left) break;
-
-		swap(start[left], start[right]);
-	}
-
-	// swap the pivot back to where it needs to go
-	swap(start + left, end - 1);
-
-	return left;
-}
-
-void quick_sort(Data** start, Data** end) {
-	const ptrdiff_t length = end - start;
-
-	if (length < 20) {
-		insertion_sort(start, end);
-		return;
-	}
-
-	const ptrdiff_t midway = partition(start, end);
-	quick_sort(start, start + midway);
-	quick_sort(start + midway + 1, end);
-}
-
-void insertion_sort(Data** start, Data** end) {
-	const ptrdiff_t length = end - start;
-
-	for (ptrdiff_t i = 0; i < length; ++i) {
-		Data* elem = start[i];
-
-		ptrdiff_t j = i;
-		for (; j > 0; --j) {
-			if (compare(elem, start[j - 1]) < 0) {
-				// less than the current element, so should go earlier;
-				// move the section forward
-				start[j] = start[j - 1];
-			} else {
-				// found the spot!
-				break;
-			}
+		for (size_t i = 0; i < count; ++i) {
+			const uint16_t first_name = entries[i].first_name;
+			const size_t bin = (first_name >> shift) & radix_mask;
+			bin_array[bin].push(entries[i]);
 		}
 
-		start[j] = elem;
+		// TODO: add a bin iterator that makes this easy
+		size_t entry = 0;
+		for (size_t bin = 0; bin < radix_base; ++bin) {
+			for (size_t i = 0; i < bin_array[bin].size; ++i) {
+				entries[entry++] = bin_array[bin][i];
+			}
+			bin_array[bin].size = 0;
+		}
+
+		if (shift == max_radix_shift_first) break;
+		shift += radix_bits;
+	}
+}
+
+void radix_sort_last_names(const size_t count) {
+	size_t shift = 0;
+
+	while (true) {
+		for (size_t i = 0; i < count; ++i) {
+			const uint16_t last_name = entries[i].last_name;
+			const size_t bin = (last_name >> shift) & radix_mask;
+			bin_array[bin].push(entries[i]);
+		}
+
+		// TODO: add a bin iterator that makes this easy
+		size_t entry = 0;
+		for (size_t bin = 0; bin < radix_base; ++bin) {
+			for (size_t i = 0; i < bin_array[bin].size; ++i) {
+				entries[entry++] = bin_array[bin][i];
+			}
+			bin_array[bin].size = 0;
+		}
+
+		if (shift == max_radix_shift_last) break;
+		shift += radix_bits;
 	}
 }
 
@@ -104,11 +185,18 @@ void sortDataList(list<Data *> &l) {
 
 	size_t index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
-		entries[index++] = *iter;
+		entries[index++].initialize(*iter);
 
-	quick_sort(entries, entries + SORT_LENGTH);
+	radix_sort_ssns(SORT_LENGTH);
+
+	bool likely_set_4 = entries[0].last_name == entries[length - 1].last_name;
+
+	if (!likely_set_4) {
+		radix_sort_first_names(SORT_LENGTH);
+		radix_sort_last_names(SORT_LENGTH);
+	}
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
-		*iter = entries[index++];
+		*iter = entries[index++].data;
 }
