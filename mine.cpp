@@ -171,9 +171,43 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++].initialize(*iter);
 
+	struct {
+		int count;
+		uint64_t key;
+	} table[0x1'0000];
+
+	size_t min_size = -1;
+	for (size_t size = 500; size < 0x1'0000; ++size) {
+		for (size_t i = 0; i < size; ++i) {
+			table[i].count = 0;
+		}
+
+		size_t i;
+		for (i = 0; i < size; ++i) {
+			Data_Ref& entry = entries[i];
+			const uint64_t key = entry.first_name;
+			const size_t tab_i = key % size;
+			auto& tab_entry = table[tab_i];
+
+			if (tab_entry.count == 0) {
+				tab_entry.key = key;
+				++tab_entry.count;
+			} else if (tab_entry.key != key) {
+				break;
+			}
+		}
+
+		if (i == size) {
+			cerr << "no collisions with size of " << size << '\n';
+			break;
+		}
+	}
+
+/*
 	radix_sort_ssns(SORT_LENGTH);
 	radix_sort_first_names(SORT_LENGTH);
 	radix_sort_last_names(SORT_LENGTH);
+*/
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
