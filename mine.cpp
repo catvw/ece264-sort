@@ -68,18 +68,52 @@ struct Bin_Array {
 		size_t size;
 		Data_Ref contents[Bin_Size];
 
-		Bin() : size(0) { }
+		inline Bin() : size(0) { }
 		inline Data_Ref operator[](size_t index) { return contents[index]; }
+		inline void push(Data_Ref& next) { contents[size++] = next; }
 	};
 
 	Bin bins[Bin_Count];
 
-	Bin_Array() { };
-	inline Bin operator[](size_t index) { return bins[index]; }
+	inline Bin_Array() { }
+	inline Bin& operator[](size_t index) { return bins[index]; }
 };
 
 constexpr const size_t maximum_items = 1'010'000; // one percent over a million
 Data_Ref entries[maximum_items];
+
+constexpr const uint_fast8_t radix_bits = 8;
+constexpr const uint_fast16_t radix_base = 0x100; // for now
+constexpr const uint_fast8_t radix_mask = 0xff;
+constexpr const uint_fast8_t max_radix_shift_last = 16;
+constexpr const uint_fast8_t max_radix_shift_first = 56;
+
+constexpr const size_t bin_size = maximum_items / radix_base * 3/2; // sure
+Bin_Array<radix_base, bin_size> bin_array;
+
+void radix_sort_last_names(const size_t count) {
+	uint_fast8_t shift = 0;
+
+	while (true) {
+		for (size_t i = 0; i < count; ++i) {
+			const uint32_t last_name = entries[i].last_name;
+			const uint_fast16_t bin = (last_name >> shift) & radix_mask;
+			bin_array[bin].push(entries[i]);
+		}
+
+		// TODO: add a bin iterator that makes this easy
+		size_t entry = 0;
+		for (size_t bin = 0; bin < radix_base; ++bin) {
+			for (size_t i = 0; i < bin_array[bin].size; ++i) {
+				entries[entry++] = bin_array[bin][i];
+			}
+			bin_array[bin].size = 0;
+		}
+
+		if (shift == max_radix_shift_last) break;
+		shift += radix_bits;
+	}
+}
 
 void sortDataList(list<Data *> &l) {
 	const size_t length = l.size();
@@ -87,6 +121,8 @@ void sortDataList(list<Data *> &l) {
 	size_t index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++].initialize(*iter);
+
+	radix_sort_last_names(SORT_LENGTH);
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
