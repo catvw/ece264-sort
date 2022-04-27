@@ -89,7 +89,7 @@ constexpr const uint_fast8_t max_radix_shift_ssn = 24;
 constexpr const uint_fast8_t max_radix_shift_first = 56;
 constexpr const uint_fast8_t max_radix_shift_last = 56;
 
-constexpr const size_t bin_size = maximum_items / radix_base * 3/2; // sure
+constexpr const size_t bin_size = maximum_items; // maybe change in the future?
 Bin_Array<radix_base, bin_size> bin_array;
 
 void radix_sort_ssns(const size_t count) {
