@@ -1,13 +1,14 @@
 #include <cstdint>
 
+#include "lookup_tables.hpp"
+
 // minimum characters needed to check uniqueness
 namespace Min_Chars {
 constexpr const size_t last_name = 9;
 constexpr const size_t first_name = 9;
 }
 
-template<typename Integer>
-constexpr inline Integer ssn_to_int(const string& to_convert) {
+inline uint32_t ssn_to_int(const string& to_convert) {
 	return 100000000*(to_convert[ 0] & 0xf)
 	      + 10000000*(to_convert[ 1] & 0xf)
 	       + 1000000*(to_convert[ 2] & 0xf)
@@ -23,8 +24,8 @@ constexpr inline Integer ssn_to_int(const string& to_convert) {
    integer, most-significant-place-justified. only for CAPITALIZED A-Z
    strings... fine for this */
 template<typename Integer>
-constexpr inline Integer string_to_int(const string& to_convert,
-                                       const size_t chars) {
+inline Integer string_to_int(const string& to_convert,
+                             const size_t chars) {
 	const size_t string_length = to_convert.length();
 	const size_t first_pass = string_length < chars ? string_length : chars;
 
@@ -40,10 +41,24 @@ constexpr inline Integer string_to_int(const string& to_convert,
 	return result;
 }
 
+inline uint16_t last_name_to_int(const string& name) {
+	return last_name_table[
+		string_to_int<uint64_t>(name, Min_Chars::last_name)
+			% last_name_table_size
+	];
+}
+
+inline uint16_t first_name_to_int(const string& name) {
+	return first_name_table[
+		string_to_int<uint64_t>(name, Min_Chars::first_name)
+			% first_name_table_size
+	];
+}
+
 struct Data_Ref {
 	uint32_t ssn;
-	uint64_t last_name;
-	uint64_t first_name;
+	uint16_t last_name;
+	uint16_t first_name;
 	Data* data;
 
 	inline void initialize(Data* data);
@@ -51,11 +66,9 @@ struct Data_Ref {
 
 inline void Data_Ref::initialize(Data* data) {
 	this->data = data;
-	ssn = ssn_to_int<uint32_t>(data->ssn);
-	last_name = string_to_int<uint64_t>(data->lastName,
-	                                    Min_Chars::last_name);
-	first_name = string_to_int<uint64_t>(data->firstName,
-	                                     Min_Chars::first_name);
+	ssn = ssn_to_int(data->ssn);
+	last_name = last_name_to_int(data->lastName);
+	first_name = first_name_to_int(data->firstName);
 }
 
 template<size_t Bin_Count, size_t Bin_Size>
@@ -82,37 +95,40 @@ struct Bin_Array {
 constexpr const size_t maximum_items = 1'010'000; // one percent over a million
 Data_Ref entries[maximum_items];
 
-constexpr const uint_fast8_t radix_bits = 4;
+constexpr const uint_fast8_t radix_bits = 9;
 constexpr const size_t radix_base = 1 << radix_bits;
 constexpr const size_t radix_mask = radix_base - 1;
-constexpr const uint_fast8_t max_radix_shift_ssn = 28;
-constexpr const uint_fast8_t max_radix_shift_first = 40;
-constexpr const uint_fast8_t max_radix_shift_last = 40;
+constexpr const uint_fast8_t max_radix_shift_first = 0;
+constexpr const uint_fast8_t max_radix_shift_last = 0;
 
-constexpr const size_t bin_size = maximum_items; // kind of large
+constexpr const size_t bin_size = (maximum_items / radix_base) << 4;
 Bin_Array<radix_base, bin_size> bin_array;
 
 void radix_sort_ssns(const size_t count) {
-	size_t shift = 0;
+	constexpr const size_t bits = 8;
+	constexpr const size_t base = 1 << bits;
+	constexpr const size_t mask = base - 1;
+	constexpr const uint_fast8_t max_shift = 24;
 
+	size_t shift = 0;
 	while (true) {
 		for (size_t i = 0; i < count; ++i) {
 			const uint32_t ssn = entries[i].ssn;
-			const size_t bin = (ssn >> shift) & radix_mask;
+			const size_t bin = (ssn >> shift) & mask;
 			bin_array[bin].push(entries[i]);
 		}
 
 		// TODO: add a bin iterator that makes this easy
 		size_t entry = 0;
-		for (size_t bin = 0; bin < radix_base; ++bin) {
+		for (size_t bin = 0; bin < base; ++bin) {
 			for (size_t i = 0; i < bin_array[bin].size; ++i) {
 				entries[entry++] = bin_array[bin][i];
 			}
 			bin_array[bin].size = 0;
 		}
 
-		if (shift == max_radix_shift_ssn) break;
-		shift += radix_bits;
+		if (shift == max_shift) break;
+		shift += bits;
 	}
 }
 
@@ -121,7 +137,7 @@ void radix_sort_first_names(const size_t count) {
 
 	while (true) {
 		for (size_t i = 0; i < count; ++i) {
-			const uint64_t first_name = entries[i].first_name;
+			const uint16_t first_name = entries[i].first_name;
 			const size_t bin = (first_name >> shift) & radix_mask;
 			bin_array[bin].push(entries[i]);
 		}
@@ -145,7 +161,7 @@ void radix_sort_last_names(const size_t count) {
 
 	while (true) {
 		for (size_t i = 0; i < count; ++i) {
-			const uint64_t last_name = entries[i].last_name;
+			const uint16_t last_name = entries[i].last_name;
 			const size_t bin = (last_name >> shift) & radix_mask;
 			bin_array[bin].push(entries[i]);
 		}
@@ -172,8 +188,13 @@ void sortDataList(list<Data *> &l) {
 		entries[index++].initialize(*iter);
 
 	radix_sort_ssns(SORT_LENGTH);
-	radix_sort_first_names(SORT_LENGTH);
-	radix_sort_last_names(SORT_LENGTH);
+
+	bool likely_set_4 = entries[0].last_name == entries[length - 1].last_name;
+
+	if (!likely_set_4) {
+		radix_sort_first_names(SORT_LENGTH);
+		radix_sort_last_names(SORT_LENGTH);
+	}
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
