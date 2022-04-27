@@ -2,7 +2,7 @@
 
 // minimum characters needed to check uniqueness
 namespace Min_Chars {
-constexpr const size_t last_name = 4; // holy shit!
+constexpr const size_t last_name = 9;
 constexpr const size_t first_name = 9;
 }
 
@@ -42,7 +42,7 @@ constexpr inline Integer string_to_int(const string& to_convert,
 
 struct Data_Ref {
 	uint32_t ssn;
-	uint32_t last_name;
+	uint64_t last_name;
 	uint64_t first_name;
 	Data* data;
 
@@ -52,7 +52,7 @@ struct Data_Ref {
 inline void Data_Ref::initialize(Data* data) {
 	this->data = data;
 	ssn = ssn_to_int<uint32_t>(data->ssn);
-	last_name = string_to_int<uint32_t>(data->lastName,
+	last_name = string_to_int<uint64_t>(data->lastName,
 	                                    Min_Chars::last_name);
 	first_name = string_to_int<uint64_t>(data->firstName,
 	                                     Min_Chars::first_name);
@@ -85,18 +85,67 @@ Data_Ref entries[maximum_items];
 constexpr const uint_fast8_t radix_bits = 8;
 constexpr const uint_fast16_t radix_base = 0x100; // for now
 constexpr const uint_fast8_t radix_mask = 0xff;
-constexpr const uint_fast8_t max_radix_shift_last = 16;
+constexpr const uint_fast8_t max_radix_shift_ssn = 24;
 constexpr const uint_fast8_t max_radix_shift_first = 56;
+constexpr const uint_fast8_t max_radix_shift_last = 56;
 
 constexpr const size_t bin_size = maximum_items / radix_base * 3/2; // sure
 Bin_Array<radix_base, bin_size> bin_array;
+
+void radix_sort_ssns(const size_t count) {
+	uint_fast8_t shift = 0;
+
+	while (true) {
+		for (size_t i = 0; i < count; ++i) {
+			const uint32_t ssn = entries[i].ssn;
+			const uint_fast16_t bin = (ssn >> shift) & radix_mask;
+			bin_array[bin].push(entries[i]);
+		}
+
+		// TODO: add a bin iterator that makes this easy
+		size_t entry = 0;
+		for (size_t bin = 0; bin < radix_base; ++bin) {
+			for (size_t i = 0; i < bin_array[bin].size; ++i) {
+				entries[entry++] = bin_array[bin][i];
+			}
+			bin_array[bin].size = 0;
+		}
+
+		if (shift == max_radix_shift_ssn) break;
+		shift += radix_bits;
+	}
+}
+
+void radix_sort_first_names(const size_t count) {
+	uint_fast8_t shift = 0;
+
+	while (true) {
+		for (size_t i = 0; i < count; ++i) {
+			const uint64_t first_name = entries[i].first_name;
+			const uint_fast16_t bin = (first_name >> shift) & radix_mask;
+			bin_array[bin].push(entries[i]);
+		}
+
+		// TODO: add a bin iterator that makes this easy
+		size_t entry = 0;
+		for (size_t bin = 0; bin < radix_base; ++bin) {
+			for (size_t i = 0; i < bin_array[bin].size; ++i) {
+				entries[entry++] = bin_array[bin][i];
+			}
+			bin_array[bin].size = 0;
+		}
+
+		if (shift == max_radix_shift_first) break;
+		shift += radix_bits;
+	}
+}
 
 void radix_sort_last_names(const size_t count) {
 	uint_fast8_t shift = 0;
 
 	while (true) {
 		for (size_t i = 0; i < count; ++i) {
-			const uint32_t last_name = entries[i].last_name;
+			const uint64_t last_name = entries[i].last_name;
 			const uint_fast16_t bin = (last_name >> shift) & radix_mask;
 			bin_array[bin].push(entries[i]);
 		}
@@ -122,6 +171,8 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++].initialize(*iter);
 
+	radix_sort_ssns(SORT_LENGTH);
+	radix_sort_first_names(SORT_LENGTH);
 	radix_sort_last_names(SORT_LENGTH);
 
 	index = 0;
