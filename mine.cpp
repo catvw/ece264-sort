@@ -56,8 +56,10 @@ inline void Data_Ref::initialize(Data* data) {
 	ssn = ssn_to_int<uint32_t>(data->ssn);
 	last_name = string_to_int<uint64_t>(data->lastName,
 	                                    Min_Chars::last_name);
+	last_name = last_name_table[last_name % last_name_table_size];
 	first_name = string_to_int<uint64_t>(data->firstName,
 	                                     Min_Chars::first_name);
+	first_name = first_name_table[first_name % first_name_table_size];
 }
 
 template<size_t Bin_Count, size_t Bin_Size>
@@ -173,23 +175,9 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++].initialize(*iter);
 
-	cerr << "last names:\n";
-	for (size_t i = 0; i < last_name_table_size; ++i) {
-		cerr << last_name_table[i] << ", ";
-	}
-	cerr << '\n';
-
-	cerr << "first names:\n";
-	for (size_t i = 0; i < first_name_table_size; ++i) {
-		cerr << first_name_table[i] << ", ";
-	}
-	cerr << '\n';
-
-/*
 	radix_sort_ssns(SORT_LENGTH);
 	radix_sort_first_names(SORT_LENGTH);
 	radix_sort_last_names(SORT_LENGTH);
-*/
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
