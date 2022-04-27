@@ -31,11 +31,11 @@ constexpr inline Integer string_to_int(const string& to_convert,
 	Integer result = 0;
 	size_t i = 0;
 	for (; i < first_pass; ++i) {
-		// effectively store in base-26
-		result *= 26;
-		result += to_convert[i] - 'A';
+		// effectively store in base-27
+		result *= 27;
+		result += to_convert[i] - 'A' + 1;
 	}
-	for (; i < chars; ++i) result *= 26;
+	for (; i < chars; ++i) result *= 27;
 
 	return result;
 }
