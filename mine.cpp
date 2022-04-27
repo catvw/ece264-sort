@@ -58,6 +58,26 @@ inline void Data_Ref::initialize(Data* data) {
 	                                     Min_Chars::first_name);
 }
 
+template<size_t Bin_Count, size_t Bin_Size>
+struct Bin_Array {
+	static constexpr const size_t max_size = Bin_Count;
+
+	struct Bin {
+		static constexpr const size_t max_size = Bin_Size;
+
+		size_t size;
+		Data_Ref contents[Bin_Size];
+
+		Bin() : size(0) { }
+		inline Data_Ref operator[](size_t index) { return contents[index]; }
+	};
+
+	Bin bins[Bin_Count];
+
+	Bin_Array() { };
+	inline Bin operator[](size_t index) { return bins[index]; }
+};
+
 constexpr const size_t maximum_items = 1'010'000; // one percent over a million
 Data_Ref entries[maximum_items];
 
