@@ -187,6 +187,7 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++].initialize(*iter);
 
+/*
 	radix_sort_ssns(SORT_LENGTH);
 
 	bool likely_set_4 = entries[0].last_name == entries[length - 1].last_name;
@@ -195,6 +196,7 @@ void sortDataList(list<Data *> &l) {
 		radix_sort_first_names(SORT_LENGTH);
 		radix_sort_last_names(SORT_LENGTH);
 	}
+*/
 
 	index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
