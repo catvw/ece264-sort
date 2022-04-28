@@ -3,12 +3,6 @@
 
 #include "lookup_tables.hpp"
 
-// minimum characters needed to check uniqueness
-namespace Min_Chars {
-constexpr const size_t last_name = 9;
-constexpr const size_t first_name = 9;
-}
-
 inline uint32_t ssn_to_int(const string& ssn) {
 	constexpr const size_t length = 11;
 	char to_convert[length];
@@ -27,17 +21,19 @@ inline uint32_t ssn_to_int(const string& ssn) {
 /* enters the given number of characters from the given string into the given
    integer, most-significant-place-justified. only for CAPITALIZED A-Z
    strings... fine for this */
-template<typename Integer>
-inline Integer string_to_int(const string& str,
-                             const size_t chars) {
+inline uint64_t name_to_int(const string& str) {
+	constexpr const size_t unique_name = 9; // characters needed, at most
+
 	const size_t string_length = str.length();
-	const size_t first_pass = string_length < chars ? string_length : chars;
-	char to_convert[9] { '@', '@', '@', '@', '@', '@', '@', '@', '@' };
-	// TODO: move that 9 somewhere else
+	const size_t first_pass = string_length < unique_name ? string_length
+	                                                      : unique_name;
+	char to_convert[unique_name] {
+		'@', '@', '@', '@', '@', '@', '@', '@', '@'
+	};
 
 	strncpy(to_convert, str.c_str(), first_pass);
 
-	constexpr const static Integer offset =
+	constexpr const static uint64_t offset =
 		 282429536481L*'@'
 		+ 10460353203L*'@'
 		  + 387420489L*'@'
@@ -60,17 +56,11 @@ inline Integer string_to_int(const string& str,
 }
 
 inline uint16_t last_name_to_int(const string& name) {
-	return last_name_table[
-		string_to_int<uint64_t>(name, Min_Chars::last_name)
-			% last_name_table_size
-	];
+	return last_name_table[name_to_int(name) % last_name_table_size];
 }
 
 inline uint16_t first_name_to_int(const string& name) {
-	return first_name_table[
-		string_to_int<uint64_t>(name, Min_Chars::first_name)
-			% first_name_table_size
-	];
+	return first_name_table[name_to_int(name) % first_name_table_size];
 }
 
 struct Data_Ref {
