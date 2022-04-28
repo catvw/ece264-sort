@@ -37,15 +37,26 @@ inline Integer string_to_int(const string& str,
 
 	strncpy(to_convert, str.c_str(), first_pass);
 
-	return 282429536481L*(to_convert[0] - '@')
-	      + 10460353203L*(to_convert[1] - '@')
-	        + 387420489L*(to_convert[2] - '@')
-	         + 14348907L*(to_convert[3] - '@')
-	           + 531441L*(to_convert[4] - '@')
-	            + 19683L*(to_convert[5] - '@')
-	              + 729L*(to_convert[6] - '@')
-	               + 27L*(to_convert[7] - '@')
-	                + 1L*(to_convert[8] - '@');
+	constexpr const static Integer offset =
+		 282429536481L*'@'
+		+ 10460353203L*'@'
+		  + 387420489L*'@'
+		   + 14348907L*'@'
+		     + 531441L*'@'
+		      + 19683L*'@'
+		        + 729L*'@'
+		         + 27L*'@'
+		          + 1L*'@';
+
+	return 282429536481L*to_convert[0]
+	      + 10460353203L*to_convert[1]
+	        + 387420489L*to_convert[2]
+	         + 14348907L*to_convert[3]
+	           + 531441L*to_convert[4]
+	            + 19683L*to_convert[5]
+	              + 729L*to_convert[6]
+	               + 27L*to_convert[7]
+	                + 1L*to_convert[8] - offset;
 }
 
 inline uint16_t last_name_to_int(const string& name) {
