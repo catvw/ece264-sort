@@ -79,20 +79,24 @@ struct Data_Ref {
 	uint16_t first_name;
 	Data* data;
 
-	inline void initialize(Data* data, bool do_names);
+	inline void init_all(Data* data);
+	inline void init_first_ssn(Data* data);
+	inline void init_ssn(Data* data);
 };
 
-inline void Data_Ref::initialize(Data* data, bool do_names) {
+inline void Data_Ref::init_ssn(Data* data) {
 	this->data = data;
 	ssn = ssn_to_int(data->ssn);
+}
 
-	if (do_names) {
-		last_name = last_name_to_int(data->lastName);
-		first_name = first_name_to_int(data->firstName);
-	} else {
-		last_name = 0;
-		first_name = 0;
-	}
+inline void Data_Ref::init_first_ssn(Data* data) {
+	init_ssn(data);
+	first_name = first_name_to_int(data->firstName);
+}
+
+inline void Data_Ref::init_all(Data* data) {
+	init_first_ssn(data);
+	last_name = last_name_to_int(data->lastName);
 }
 
 template<size_t Bin_Count, size_t Bin_Size>
@@ -204,27 +208,11 @@ void radix_sort_last_names(const size_t count) {
 	}
 }
 
-inline bool ordered(const Data_Ref& first, const Data_Ref& second) {
-	const auto last_name_1 = first.last_name;
-	const auto last_name_2 = second.last_name;
-	const auto first_name_1 = first.first_name;
-	const auto first_name_2 = second.first_name;
-	const auto ssn_1 = first.ssn;
-	const auto ssn_2 = second.ssn;
-
-	if (last_name_1 < last_name_2) {
-		return true;
-	} else if (last_name_1 == last_name_2) {
-		if (first_name_1 < first_name_2) {
-			return true;
-		} else if (first_name_1 == first_name_2) {
-			if (ssn_1 <= ssn_2) {
-				return true;
-			}
-		}
-	}
-
-	return false;
+/* should precede *only* if first names equal and SSNs not, as the insertion
+   sort should stay within name groups at all times */
+inline bool should_precede(const Data_Ref& elem, const Data_Ref& compare) {
+	return (elem.first_name == compare.first_name)
+	    && (elem.ssn <= compare.ssn);
 }
 
 void insertion_sort(const size_t count) {
@@ -233,7 +221,7 @@ void insertion_sort(const size_t count) {
 
 		size_t j = i;
 		for (; j > 0; --j) {
-			if (ordered(elem, entries[j - 1])) {
+			if (should_precede(elem, entries[j - 1])) {
 				// less than the current element, so should go earlier;
 				// move the section forward
 				entries[j] = entries[j - 1];
@@ -258,11 +246,21 @@ void sortDataList(list<Data *> &l) {
 		likely_set_3_or_4
 		&& (l.front()->lastName.compare(l.back()->lastName) == 0);
 
-	const bool init_names = !likely_set_4;
+	const bool init_last_names = !likely_set_3_or_4;
+	const bool init_first_names = !likely_set_4;
 
 	size_t index = 0;
-	for (auto iter = l.begin(); iter != l.end(); ++iter)
-		entries[index++].initialize(*iter, init_names);
+
+	if (likely_set_4) {
+		for (auto iter = l.begin(); iter != l.end(); ++iter)
+			entries[index++].init_ssn(*iter);
+	} else if (likely_set_3_or_4) {
+		for (auto iter = l.begin(); iter != l.end(); ++iter)
+			entries[index++].init_first_ssn(*iter);
+	} else {
+		for (auto iter = l.begin(); iter != l.end(); ++iter)
+			entries[index++].init_all(*iter);
+	}
 
 	if (likely_set_4) {
 		radix_sort_ssns(SORT_LENGTH);
