@@ -79,14 +79,20 @@ struct Data_Ref {
 	uint16_t first_name;
 	Data* data;
 
-	inline void initialize(Data* data);
+	inline void initialize(Data* data, bool do_names);
 };
 
-inline void Data_Ref::initialize(Data* data) {
+inline void Data_Ref::initialize(Data* data, bool do_names) {
 	this->data = data;
 	ssn = ssn_to_int(data->ssn);
-	last_name = last_name_to_int(data->lastName);
-	first_name = first_name_to_int(data->firstName);
+
+	if (do_names) {
+		last_name = last_name_to_int(data->lastName);
+		first_name = first_name_to_int(data->firstName);
+	} else {
+		last_name = 0;
+		first_name = 0;
+	}
 }
 
 template<size_t Bin_Count, size_t Bin_Size>
@@ -243,19 +249,24 @@ void insertion_sort(const size_t count) {
 
 void sortDataList(list<Data *> &l) {
 	const size_t length = l.size();
+	auto head = l.begin();
+
+	const bool likely_set_3_or_4 =
+		((*head++)->lastName == (*head)->lastName)
+		&& ((*head++)->lastName == (*head)->lastName);
+	const bool likely_set_4 =
+		likely_set_3_or_4 && (l.front()->lastName == l.back()->lastName);
+
+	const bool init_names = true;
 
 	size_t index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
-		entries[index++].initialize(*iter);
-
-	bool likely_set_3 = (entries[0].last_name == entries[4].last_name)
-	                 && (entries[0].last_name == entries[9].last_name);
-	bool likely_set_4 = entries[0].last_name == entries[length - 1].last_name;
+		entries[index++].initialize(*iter, init_names);
 
 	if (likely_set_4) {
 		radix_sort_ssns(SORT_LENGTH);
 	} else {
-		if (!likely_set_3) {
+		if (!likely_set_3_or_4) {
 			radix_sort_first_names(SORT_LENGTH);
 			radix_sort_last_names(SORT_LENGTH);
 		}
