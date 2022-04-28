@@ -198,6 +198,49 @@ void radix_sort_last_names(const size_t count) {
 	}
 }
 
+inline bool ordered(const Data_Ref& first, const Data_Ref& second) {
+	const auto last_name_1 = first.last_name;
+	const auto last_name_2 = second.last_name;
+	const auto first_name_1 = first.first_name;
+	const auto first_name_2 = second.first_name;
+	const auto ssn_1 = first.ssn;
+	const auto ssn_2 = second.ssn;
+
+	if (last_name_1 < last_name_2) {
+		return true;
+	} else if (last_name_1 == last_name_2) {
+		if (first_name_1 < first_name_2) {
+			return true;
+		} else if (first_name_1 == first_name_2) {
+			if (ssn_1 <= ssn_2) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void insertion_sort(const size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		Data_Ref elem = entries[i];
+
+		size_t j = i;
+		for (; j > 0; --j) {
+			if (ordered(elem, entries[j - 1])) {
+				// less than the current element, so should go earlier;
+				// move the section forward
+				entries[j] = entries[j - 1];
+			} else {
+				// found the spot!
+				break;
+			}
+		}
+
+		entries[j] = elem;
+	}
+}
+
 void sortDataList(list<Data *> &l) {
 	const size_t length = l.size();
 
@@ -207,11 +250,12 @@ void sortDataList(list<Data *> &l) {
 
 	bool likely_set_4 = entries[0].last_name == entries[length - 1].last_name;
 
-	radix_sort_ssns(SORT_LENGTH);
-
-	if (!likely_set_4) {
+	if (likely_set_4) {
+		radix_sort_ssns(SORT_LENGTH);
+	} else {
 		radix_sort_first_names(SORT_LENGTH);
 		radix_sort_last_names(SORT_LENGTH);
+		insertion_sort(SORT_LENGTH);
 	}
 
 	index = 0;
