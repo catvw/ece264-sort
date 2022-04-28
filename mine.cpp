@@ -118,6 +118,18 @@ constexpr const size_t ssn_bins = 1 << 8;
 constexpr const size_t bin_size = (maximum_items / ssn_bins) << 3;
 Bin_Array<bin_count, bin_size> bin_array;
 
+template <size_t bin_count> // yes, really---it's empirically faster
+inline void copy_back_from_bins() {
+	// TODO: add a bin iterator to copy between bin sets directly?
+	size_t entry = 0;
+	for (size_t bin = 0; bin < bin_count; ++bin) {
+		for (size_t i = 0; i < bin_array[bin].size; ++i) {
+			entries[entry++] = bin_array[bin][i];
+		}
+		bin_array[bin].size = 0;
+	}
+}
+
 void radix_sort_ssns(const size_t count) {
 	constexpr const uint_fast8_t bits = 8;
 	constexpr const size_t base = 1 << bits;
@@ -132,14 +144,7 @@ void radix_sort_ssns(const size_t count) {
 			bin_array[bin].push(entries[i]);
 		}
 
-		// TODO: add a bin iterator that makes this easy
-		size_t entry = 0;
-		for (size_t bin = 0; bin < base; ++bin) {
-			for (size_t i = 0; i < bin_array[bin].size; ++i) {
-				entries[entry++] = bin_array[bin][i];
-			}
-			bin_array[bin].size = 0;
-		}
+		copy_back_from_bins<base>();
 
 		if (shift == max_shift) break;
 		shift += bits;
@@ -155,14 +160,7 @@ void radix_sort_names(const size_t count) {
 		bin_array[bin].push(entries[i]);
 	}
 
-	// TODO: add a bin iterator that makes this easy
-	size_t entry = 0;
-	for (size_t bin = 0; bin < bin_count; ++bin) {
-		for (size_t i = 0; i < bin_array[bin].size; ++i) {
-			entries[entry++] = bin_array[bin][i];
-		}
-		bin_array[bin].size = 0;
-	}
+	copy_back_from_bins<bin_count>();
 
 	// last name
 	for (size_t i = 0; i < count; ++i) {
@@ -170,15 +168,7 @@ void radix_sort_names(const size_t count) {
 		bin_array[bin].push(entries[i]);
 	}
 
-	// TODO: add a bin iterator that makes this easy
-	entry = 0;
-	for (size_t bin = 0; bin < bin_count; ++bin) {
-		for (size_t i = 0; i < bin_array[bin].size; ++i) {
-			entries[entry++] = bin_array[bin][i];
-		}
-		bin_array[bin].size = 0;
-	}
-
+	copy_back_from_bins<bin_count>();
 }
 
 /* should precede *only* if first names equal and SSNs not, as the insertion
