@@ -10,7 +10,7 @@ constexpr const size_t first_name = 9;
 }
 
 inline uint32_t ssn_to_int(const string& ssn) {
-	const size_t length = 11;
+	constexpr const size_t length = 11;
 	char to_convert[length];
 	strncpy(to_convert, ssn.c_str(), length);
 	return 100000000*to_convert[ 0]
