@@ -79,14 +79,20 @@ struct Data_Ref {
 	uint16_t first_name;
 	Data* data;
 
-	inline void initialize(Data* data);
+	inline void initialize(Data* data, bool do_names);
 };
 
-inline void Data_Ref::initialize(Data* data) {
+inline void Data_Ref::initialize(Data* data, bool do_names) {
 	this->data = data;
 	ssn = ssn_to_int(data->ssn);
-	last_name = last_name_to_int(data->lastName);
-	first_name = first_name_to_int(data->firstName);
+
+	if (do_names) {
+		last_name = last_name_to_int(data->lastName);
+		first_name = first_name_to_int(data->firstName);
+	} else {
+		last_name = 0;
+		first_name = 0;
+	}
 }
 
 template<size_t Bin_Count, size_t Bin_Size>
@@ -198,20 +204,74 @@ void radix_sort_last_names(const size_t count) {
 	}
 }
 
+inline bool ordered(const Data_Ref& first, const Data_Ref& second) {
+	const auto last_name_1 = first.last_name;
+	const auto last_name_2 = second.last_name;
+	const auto first_name_1 = first.first_name;
+	const auto first_name_2 = second.first_name;
+	const auto ssn_1 = first.ssn;
+	const auto ssn_2 = second.ssn;
+
+	if (last_name_1 < last_name_2) {
+		return true;
+	} else if (last_name_1 == last_name_2) {
+		if (first_name_1 < first_name_2) {
+			return true;
+		} else if (first_name_1 == first_name_2) {
+			if (ssn_1 <= ssn_2) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void insertion_sort(const size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		Data_Ref elem = entries[i];
+
+		size_t j = i;
+		for (; j > 0; --j) {
+			if (ordered(elem, entries[j - 1])) {
+				// less than the current element, so should go earlier;
+				// move the section forward
+				entries[j] = entries[j - 1];
+			} else {
+				// found the spot!
+				break;
+			}
+		}
+
+		entries[j] = elem;
+	}
+}
+
 void sortDataList(list<Data *> &l) {
 	const size_t length = l.size();
+	auto head = l.begin();
+
+	const bool likely_set_3_or_4 =
+		((*head++)->lastName.compare((*head)->lastName) == 0)
+		&& ((*head++)->lastName.compare((*head)->lastName) == 0);
+	const bool likely_set_4 =
+		likely_set_3_or_4
+		&& (l.front()->lastName.compare(l.back()->lastName) == 0);
+
+	const bool init_names = !likely_set_4;
 
 	size_t index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
-		entries[index++].initialize(*iter);
+		entries[index++].initialize(*iter, init_names);
 
-	bool likely_set_4 = entries[0].last_name == entries[length - 1].last_name;
-
-	radix_sort_ssns(SORT_LENGTH);
-
-	if (!likely_set_4) {
-		radix_sort_first_names(SORT_LENGTH);
-		radix_sort_last_names(SORT_LENGTH);
+	if (likely_set_4) {
+		radix_sort_ssns(SORT_LENGTH);
+	} else {
+		if (!likely_set_3_or_4) {
+			radix_sort_first_names(SORT_LENGTH);
+			radix_sort_last_names(SORT_LENGTH);
+		}
+		insertion_sort(SORT_LENGTH);
 	}
 
 	index = 0;
