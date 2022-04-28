@@ -113,17 +113,13 @@ struct Bin_Array {
 constexpr const size_t maximum_items = 1'010'000; // one percent over a million
 Data_Ref entries[maximum_items];
 
-constexpr const uint_fast8_t radix_bits = 9;
-constexpr const size_t radix_base = 1 << radix_bits;
-constexpr const size_t radix_mask = radix_base - 1;
-constexpr const uint_fast8_t max_radix_shift_first = 0;
-constexpr const uint_fast8_t max_radix_shift_last = 0;
-
-constexpr const size_t bin_size = (maximum_items / radix_base) << 4;
-Bin_Array<radix_base, bin_size> bin_array;
+constexpr const size_t bin_count = 500; // only 500 names total
+constexpr const size_t ssn_bins = 1 << 8;
+constexpr const size_t bin_size = (maximum_items / ssn_bins) << 3;
+Bin_Array<bin_count, bin_size> bin_array;
 
 void radix_sort_ssns(const size_t count) {
-	constexpr const size_t bits = 8;
+	constexpr const uint_fast8_t bits = 8;
 	constexpr const size_t base = 1 << bits;
 	constexpr const size_t mask = base - 1;
 	constexpr const uint_fast8_t max_shift = 24;
@@ -150,52 +146,39 @@ void radix_sort_ssns(const size_t count) {
 	}
 }
 
-void radix_sort_first_names(const size_t count) {
-	size_t shift = 0;
+void radix_sort_names(const size_t count) {
+	// bin count is larger than the number of names, so one pass each
 
-	while (true) {
-		for (size_t i = 0; i < count; ++i) {
-			const uint16_t first_name = entries[i].first_name;
-			const size_t bin = (first_name >> shift) & radix_mask;
-			bin_array[bin].push(entries[i]);
-		}
-
-		// TODO: add a bin iterator that makes this easy
-		size_t entry = 0;
-		for (size_t bin = 0; bin < radix_base; ++bin) {
-			for (size_t i = 0; i < bin_array[bin].size; ++i) {
-				entries[entry++] = bin_array[bin][i];
-			}
-			bin_array[bin].size = 0;
-		}
-
-		if (shift == max_radix_shift_first) break;
-		shift += radix_bits;
+	// first name
+	for (size_t i = 0; i < count; ++i) {
+		const uint16_t bin = entries[i].first_name;
+		bin_array[bin].push(entries[i]);
 	}
-}
 
-void radix_sort_last_names(const size_t count) {
-	size_t shift = 0;
-
-	while (true) {
-		for (size_t i = 0; i < count; ++i) {
-			const uint16_t last_name = entries[i].last_name;
-			const size_t bin = (last_name >> shift) & radix_mask;
-			bin_array[bin].push(entries[i]);
+	// TODO: add a bin iterator that makes this easy
+	size_t entry = 0;
+	for (size_t bin = 0; bin < bin_count; ++bin) {
+		for (size_t i = 0; i < bin_array[bin].size; ++i) {
+			entries[entry++] = bin_array[bin][i];
 		}
-
-		// TODO: add a bin iterator that makes this easy
-		size_t entry = 0;
-		for (size_t bin = 0; bin < radix_base; ++bin) {
-			for (size_t i = 0; i < bin_array[bin].size; ++i) {
-				entries[entry++] = bin_array[bin][i];
-			}
-			bin_array[bin].size = 0;
-		}
-
-		if (shift == max_radix_shift_last) break;
-		shift += radix_bits;
+		bin_array[bin].size = 0;
 	}
+
+	// last name
+	for (size_t i = 0; i < count; ++i) {
+		const uint16_t bin = entries[i].last_name;
+		bin_array[bin].push(entries[i]);
+	}
+
+	// TODO: add a bin iterator that makes this easy
+	entry = 0;
+	for (size_t bin = 0; bin < bin_count; ++bin) {
+		for (size_t i = 0; i < bin_array[bin].size; ++i) {
+			entries[entry++] = bin_array[bin][i];
+		}
+		bin_array[bin].size = 0;
+	}
+
 }
 
 /* should precede *only* if first names equal and SSNs not, as the insertion
@@ -256,8 +239,7 @@ void sortDataList(list<Data *> &l) {
 		radix_sort_ssns(SORT_LENGTH);
 	} else {
 		if (!likely_set_3_or_4) {
-			radix_sort_first_names(SORT_LENGTH);
-			radix_sort_last_names(SORT_LENGTH);
+			radix_sort_names(SORT_LENGTH);
 		}
 		insertion_sort(SORT_LENGTH);
 	}
