@@ -32,19 +32,20 @@ inline Integer string_to_int(const string& str,
                              const size_t chars) {
 	const size_t string_length = str.length();
 	const size_t first_pass = string_length < chars ? string_length : chars;
-	char to_convert[chars];
-	strncpy(to_convert, str.c_str(), string_length);
+	char to_convert[9] { '@', '@', '@', '@', '@', '@', '@', '@', '@' };
+	// TODO: move that 9 somewhere else
 
-	Integer result = 0;
-	size_t i = 0;
-	for (; i < first_pass; ++i) {
-		// effectively store in base-27
-		result *= 27;
-		result += to_convert[i] - 'A' + 1;
-	}
-	for (; i < chars; ++i) result *= 27;
+	strncpy(to_convert, str.c_str(), first_pass);
 
-	return result;
+	return 282429536481L*(to_convert[0] - '@')
+	      + 10460353203L*(to_convert[1] - '@')
+	        + 387420489L*(to_convert[2] - '@')
+	         + 14348907L*(to_convert[3] - '@')
+	           + 531441L*(to_convert[4] - '@')
+	            + 19683L*(to_convert[5] - '@')
+	              + 729L*(to_convert[6] - '@')
+	               + 27L*(to_convert[7] - '@')
+	                + 1L*(to_convert[8] - '@');
 }
 
 inline uint16_t last_name_to_int(const string& name) {
@@ -193,9 +194,9 @@ void sortDataList(list<Data *> &l) {
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
 		entries[index++].initialize(*iter);
 
-	radix_sort_ssns(SORT_LENGTH);
-
 	bool likely_set_4 = entries[0].last_name == entries[length - 1].last_name;
+
+	radix_sort_ssns(SORT_LENGTH);
 
 	if (!likely_set_4) {
 		radix_sort_first_names(SORT_LENGTH);
