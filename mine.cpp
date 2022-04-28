@@ -252,12 +252,13 @@ void sortDataList(list<Data *> &l) {
 	auto head = l.begin();
 
 	const bool likely_set_3_or_4 =
-		((*head++)->lastName == (*head)->lastName)
-		&& ((*head++)->lastName == (*head)->lastName);
+		((*head++)->lastName.compare((*head)->lastName) == 0)
+		&& ((*head++)->lastName.compare((*head)->lastName) == 0);
 	const bool likely_set_4 =
-		likely_set_3_or_4 && (l.front()->lastName == l.back()->lastName);
+		likely_set_3_or_4
+		&& (l.front()->lastName.compare(l.back()->lastName) == 0);
 
-	const bool init_names = true;
+	const bool init_names = !likely_set_4;
 
 	size_t index = 0;
 	for (auto iter = l.begin(); iter != l.end(); ++iter)
